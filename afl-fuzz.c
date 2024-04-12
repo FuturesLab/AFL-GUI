@@ -8180,8 +8180,6 @@ int main(int argc, char** argv) {
 
   perform_dry_run(use_argv);
 
-  sleep(10);
-
   cull_queue();
 
   show_init_stats();
@@ -8246,6 +8244,9 @@ int main(int argc, char** argv) {
 
     letslog("Fuzz one! \n", -1);
 
+
+    skipped_fuzz = fuzz_one(use_argv);
+
     if (python_pid == -1 && gui_mode) {
         python_pid = fork();
 
@@ -8255,8 +8256,6 @@ int main(int argc, char** argv) {
             exit(0);
         }
     }
-
-    skipped_fuzz = fuzz_one(use_argv);
 
     printf("skipping this fuzz - %d\n", skipped_fuzz);
 
