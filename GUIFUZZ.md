@@ -17,7 +17,7 @@ export AFL_SKIP_CPUFREQ=1
 
 Command to run -
 
-~/work/AFL/afl-fuzz -t 5000 -i in -o out -g ./hello.py -n -- /usr/bin/gnome-calculator
+/home/prikshit/work/AFL/afl-fuzz -t 30000+ -i in -o out -g /home/prikshit/Downloads/gui_interaction.py -n -- /usr/bin/gnome-calculator
 
 Tail the logs -
 tail -f -n 100 log.txt
