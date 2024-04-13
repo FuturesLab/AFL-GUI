@@ -6930,12 +6930,12 @@ static void handle_stop_sig(int sig) {
   stop_soon = 1; 
 
   if (child_pid > 0) {
-    // kill(child_pid, SIGKILL);
+    kill(child_pid, SIGKILL);
         // letslog("stopping child now!\n", -1);
     //parent
 
 }
-//   if (forksrv_pid > 0) kill(forksrv_pid, SIGKILL);
+  if (forksrv_pid > 0) kill(forksrv_pid, SIGKILL);
 
 }
 
@@ -6954,15 +6954,15 @@ static void handle_timeout(int sig) {
 
   if (child_pid > 0) {
     //parent
-    // letslog("closing child now!\n", -1);
+    letslog("closing child now!\n", -1);
 
     child_timed_out = 1; 
-    // kill(child_pid, SIGKILL);
+    kill(child_pid, SIGKILL);
 
   } else if (child_pid == -1 && forksrv_pid > 0) {
 
     child_timed_out = 1; 
-    // kill(forksrv_pid, SIGKILL);
+    kill(forksrv_pid, SIGKILL);
 
   }
 
@@ -8244,9 +8244,6 @@ int main(int argc, char** argv) {
 
     letslog("Fuzz one! \n", -1);
 
-
-    skipped_fuzz = fuzz_one(use_argv);
-
     if (python_pid == -1 && gui_mode) {
         python_pid = fork();
 
@@ -8256,6 +8253,8 @@ int main(int argc, char** argv) {
             exit(0);
         }
     }
+
+    skipped_fuzz = fuzz_one(use_argv);
 
     printf("skipping this fuzz - %d\n", skipped_fuzz);
 
@@ -8283,9 +8282,9 @@ int main(int argc, char** argv) {
       if (child_pid > 0) {
         //parent
         // letslog("closing child in main", -1);
-        // kill(child_pid, SIGKILL);
+        kill(child_pid, SIGKILL);
     }
-    //   if (forksrv_pid > 0) kill(forksrv_pid, SIGKILL);
+      if (forksrv_pid > 0) kill(forksrv_pid, SIGKILL);
   }
   /* Now that we've killed the forkserver, we wait for it to be able to get rusage stats. */
   if (waitpid(forksrv_pid, NULL, 0) <= 0) {
