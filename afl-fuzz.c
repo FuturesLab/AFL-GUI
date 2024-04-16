@@ -2336,8 +2336,6 @@ static u8 run_target(char** argv, u32 timeout) {
     if (child_pid < 0) PFATAL("fork() failed");
 
     if (!child_pid) {
-        //child
-
       struct rlimit r;
 
 //       if (mem_limit) {
@@ -2397,9 +2395,16 @@ static u8 run_target(char** argv, u32 timeout) {
                              "symbolize=0:"
                              "msan_track_origins=0", 0);
 
-    char *args[] = {target_path, NULL};
+      if (!gui_mode) {
 
-      execv(target_path, args);
+        execv(target_path, argv);
+
+      } else {
+
+        char *args[] = {target_path, NULL};
+        execv(target_path, args);
+
+      }
 
       /* Use a distinctive bitmap value to tell the parent about execv()
          falling through. */
@@ -2520,9 +2525,9 @@ static u8 run_target(char** argv, u32 timeout) {
     return FAULT_CRASH;
   }
 
-  if ((dumb_mode == 1 || no_forkserver) && tb4 == EXEC_FAIL_SIG) {
+  if ((dumb_mode == 1 || no_forkserver) && tb4 == EXEC_FAIL_SIG)
     return FAULT_ERROR;
-}
+
   /* It makes sense to account for the slowest units only if the testcase was run
   under the user defined timeout. */
   if (!(timeout > exec_tmout) && (slowest_exec_ms < exec_ms)) {
@@ -5322,7 +5327,7 @@ static u8 fuzz_one(char** argv) {
 
   orig_hit_cnt = new_hit_cnt;
 
-  for (stage_cur = 0; stage_cur < MY_STAGE_MAX; stage_cur++) {
+  for (stage_cur = 0; stage_cur < stage_max; stage_cur++) {
 
     stage_cur_byte = stage_cur >> 3;
 
@@ -5349,7 +5354,7 @@ static u8 fuzz_one(char** argv) {
 
   orig_hit_cnt = new_hit_cnt;
 
-  for (stage_cur = 0; stage_cur < MY_STAGE_MAX; stage_cur++) {
+  for (stage_cur = 0; stage_cur < stage_max; stage_cur++) {
 
     stage_cur_byte = stage_cur >> 3;
 
@@ -5404,7 +5409,7 @@ static u8 fuzz_one(char** argv) {
 
   orig_hit_cnt = new_hit_cnt;
 
-  for (stage_cur = 0; stage_cur < MY_STAGE_MAX; stage_cur++) {
+  for (stage_cur = 0; stage_cur < stage_max; stage_cur++) {
 
     stage_cur_byte = stage_cur;
 
@@ -5475,7 +5480,7 @@ static u8 fuzz_one(char** argv) {
 
   orig_hit_cnt = new_hit_cnt;
 
-  for (i = 0; i < MY_STAGE_MAX; i++) {
+  for (i = 0; i < stage_max; i++) {
 
     /* Let's consult the effector map... */
 
@@ -5512,7 +5517,7 @@ static u8 fuzz_one(char** argv) {
 
   orig_hit_cnt = new_hit_cnt;
 
-  for (i = 0; i < MY_STAGE_MAX; i++) {
+  for (i = 0; i < stage_max; i++) {
 
     /* Let's consult the effector map... */
     if (!eff_map[EFF_APOS(i)] && !eff_map[EFF_APOS(i + 1)] &&
@@ -5569,7 +5574,7 @@ skip_bitflip:
 
     stage_cur_byte = i;
 
-    for (j = 1; j <= MY_STAGE_MAX; j++) {
+    for (j = 1; j <= stage_max; j++) {
 
       u8 r = orig ^ (orig + j);
 
@@ -5633,7 +5638,7 @@ skip_bitflip:
 
     stage_cur_byte = i;
 
-    for (j = 1; j <= MY_STAGE_MAX; j++) {
+    for (j = 1; j <= stage_max; j++) {
 
       u16 r1 = orig ^ (orig + j),
           r2 = orig ^ (orig - j),
@@ -5728,7 +5733,7 @@ skip_bitflip:
 
     stage_cur_byte = i;
 
-    for (j = 1; j <= MY_STAGE_MAX; j++) {
+    for (j = 1; j <= stage_max; j++) {
 
       u32 r1 = orig ^ (orig + j),
           r2 = orig ^ (orig - j),
@@ -8220,7 +8225,7 @@ int main(int argc, char** argv) {
   }
   /* Now that we've killed the forkserver, we wait for it to be able to get rusage stats. */
   if (waitpid(forksrv_pid, NULL, 0) <= 0) {
-    WARNF("error waitpid later\n");
+    WARNF("error waitpid\n");
   }
 
   write_bitmap();
