@@ -2134,12 +2134,6 @@ EXP_ST void init_forkserver(char** argv) {
                            "allocator_may_return_null=1:"
                            "msan_track_origins=0", 0);
 
-    // char *args[] = {"/usr/bin/gnome-calculator", NULL};
-
-    // execv(target_path, args);
-
-    printf("we are inside forkserver\n");
-
     execv(target_path, argv);
 
     /* Use a distinctive bitmap signature to tell the parent about execv()
@@ -2314,8 +2308,6 @@ EXP_ST void init_forkserver(char** argv) {
    information. The called program will update trace_bits[]. */
 
 static u8 run_target(char** argv, u32 timeout) {
-    letslog("Inside run target\n", -1);
-
   static struct itimerval it;
   static u32 prev_timed_out = 0;
   static u64 exec_ms = 0;
@@ -2338,11 +2330,8 @@ static u8 run_target(char** argv, u32 timeout) {
      init_forkserver(), but c'est la vie. */
 
   if (dumb_mode == 1 || no_forkserver) {
-    printf("dumb_mode || no_forkserver\n");
 
     child_pid = fork();
-
-    printf("child not created\n");
 
     if (child_pid < 0) PFATAL("fork() failed");
 
@@ -2351,10 +2340,7 @@ static u8 run_target(char** argv, u32 timeout) {
 
       struct rlimit r;
 
-    printf("child is now created %llu\n", mem_limit);
-
 //       if (mem_limit) {
-//         letslog("inside mem limit \n", -1);
 
 //         r.rlim_max = r.rlim_cur = ((rlim_t)mem_limit) << 20;
 
@@ -2369,8 +2355,6 @@ static u8 run_target(char** argv, u32 timeout) {
 // #endif /* ^RLIMIT_AS */
 
 //       }
-
-      letslog("I am a child!\n", -1);
 
       r.rlim_max = r.rlim_cur = 0;
 
@@ -2413,12 +2397,9 @@ static u8 run_target(char** argv, u32 timeout) {
                              "symbolize=0:"
                              "msan_track_origins=0", 0);
 
-        // letslog(target_path, strlen(target_path));
-    char *args[] = {"/usr/bin/gnome-calculator", NULL};
+    char *args[] = {target_path, NULL};
 
-    // letslog(target_path, strlen(target_path));
-    letslog("just before opening\n", -1);
-      execv("/usr/bin/gnome-calculator", args);
+      execv(target_path, args);
 
       /* Use a distinctive bitmap value to tell the parent about execv()
          falling through. */
@@ -2428,10 +2409,20 @@ static u8 run_target(char** argv, u32 timeout) {
 
     }
 
+    if (gui_mode) {
+        python_pid = fork();
+
+        if (!python_pid) {
+
+            char *pargs[] = {"/usr/bin/python3", gui_dir, NULL};
+            execv("/usr/bin/python3", pargs);
+
+            exit(0);
+        }
+    }
+
   } else {
     s32 res;
-
-    printf("else dumb_mode || no_forkserver");
 
     /* In non-dumb mode, we have the fork server up and running, so simply
        tell it to have at it, and then read back PID. */
@@ -2465,12 +2456,7 @@ static u8 run_target(char** argv, u32 timeout) {
 
   if (dumb_mode == 1 || no_forkserver) {
 
-    // letslog("waiting for child child \n", -1);
-
     if (waitpid(child_pid, &status, 0) <= 0) PFATAL("waitpid() failed");
-    // letslog("waiting over \n", -1);
-    printf("waiting over\n");
-
 
   } else {
 
@@ -2487,7 +2473,6 @@ static u8 run_target(char** argv, u32 timeout) {
 
   if (!WIFSTOPPED(status)) child_pid = 0;
 
-    printf("getitimer\n");
   getitimer(ITIMER_REAL, &it);
   exec_ms = (u64) timeout - (it.it_value.tv_sec * 1000 +
                              it.it_value.tv_usec / 1000);
@@ -2507,8 +2492,6 @@ static u8 run_target(char** argv, u32 timeout) {
 
   tb4 = *(u32*)trace_bits;
 
-  printf("classify counts\n");
-
 #ifdef WORD_SIZE_64
   classify_counts((u64*)trace_bits);
 #else
@@ -2525,7 +2508,6 @@ static u8 run_target(char** argv, u32 timeout) {
 
     if (child_timed_out && kill_signal == SIGKILL) return FAULT_TMOUT;
 
-    printf("its a crash 1");
     return FAULT_CRASH;
 
   }
@@ -2535,14 +2517,10 @@ static u8 run_target(char** argv, u32 timeout) {
 
   if (uses_asan && WEXITSTATUS(status) == MSAN_ERROR) {
     kill_signal = 0;
-        printf("its a crash 2");
-
     return FAULT_CRASH;
   }
 
   if ((dumb_mode == 1 || no_forkserver) && tb4 == EXEC_FAIL_SIG) {
-        printf("its a crash 3");
-
     return FAULT_ERROR;
 }
   /* It makes sense to account for the slowest units only if the testcase was run
@@ -2551,7 +2529,6 @@ static u8 run_target(char** argv, u32 timeout) {
     slowest_exec_ms = exec_ms;
   }
 
-    printf("return fine\n");
   return FAULT_NONE;
 
 }
@@ -2627,8 +2604,6 @@ static void show_stats(void);
 static u8 calibrate_case(char** argv, struct queue_entry* q, u8* use_mem,
                          u32 handicap, u8 from_queue) {
 
-letslog("Caliberate!\n", -1);
-
   static u8 first_trace[MAP_SIZE];
 
   u8  fault = 0, new_bits = 0, var_detected = 0, hnb = 0,
@@ -2671,11 +2646,7 @@ letslog("Caliberate!\n", -1);
 
   for (stage_cur = 0; stage_cur < 1; stage_cur++) {
 
-    letslog("Running target\n", -1);
-
     u32 cksum;
-
-    printf("stage_cur %d\n", stage_cur);
 
     if (!first_run && !(stage_cur % stats_update_freq)) show_stats();
 
@@ -2808,7 +2779,6 @@ static void perform_dry_run(char** argv) {
   u32 cal_failures = 0;
   u8* skip_crashes = getenv("AFL_SKIP_CRASHES");
 
-    printf("Performing dry run!\n");
   int i = 0;
 
   while (q) {
@@ -2831,11 +2801,7 @@ static void perform_dry_run(char** argv) {
 
     close(fd);
 
-    printf("i: %d\n", i);
-
     res = calibrate_case(argv, q, use_mem, 0, 1);
-
-    printf("%d\n", res);
 
     i+=1;
 
@@ -2850,8 +2816,6 @@ static void perform_dry_run(char** argv) {
     switch (res) {
 
       case FAULT_NONE:
-
-        printf("no fault");
 
         if (q == queue) check_map_coverage();
 
@@ -3323,7 +3287,6 @@ static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault) {
 
         u8 new_fault;
         write_to_testcase(mem, len);
-        printf("save if int\n");
         new_fault = run_target(argv, hang_tmout);
 
         /* A corner case that one user reported bumping into: increasing the
@@ -4642,8 +4605,6 @@ static u8 trim_case(char** argv, struct queue_entry* q, u8* in_buf) {
 
       write_with_gap(in_buf, q->len, remove_pos, trim_avail);
 
-            printf("trim\n");
-
       fault = run_target(argv, exec_tmout);
       trim_execs++;
 
@@ -4736,8 +4697,6 @@ EXP_ST u8 common_fuzz_stuff(char** argv, u8* out_buf, u32 len) {
   }
 
   write_to_testcase(out_buf, len);
-
-   letslog("Common fuzz stuff \n", -1);
 
   fault = run_target(argv, exec_tmout);
 
@@ -5248,7 +5207,7 @@ static u8 fuzz_one(char** argv) {
 
   /* Single walking bit. */
 
-  int MY_STAGE_MAX = 1;
+  int MY_STAGE_MAX = 20;
 
   stage_short = "flip1";
   stage_max   = len << 3;
@@ -6887,9 +6846,6 @@ static void sync_fuzzers(char** argv) {
 
         write_to_testcase(mem, st.st_size);
 
-                printf("sync fuzzers\n");
-
-
         fault = run_target(argv, exec_tmout);
 
         if (stop_soon) return;
@@ -6931,9 +6887,6 @@ static void handle_stop_sig(int sig) {
 
   if (child_pid > 0) {
     kill(child_pid, SIGKILL);
-        // letslog("stopping child now!\n", -1);
-    //parent
-
 }
   if (forksrv_pid > 0) kill(forksrv_pid, SIGKILL);
 
@@ -6953,9 +6906,6 @@ static void handle_skipreq(int sig) {
 static void handle_timeout(int sig) {
 
   if (child_pid > 0) {
-    //parent
-    letslog("closing child now!\n", -1);
-
     child_timed_out = 1; 
     kill(child_pid, SIGKILL);
 
@@ -8082,8 +8032,6 @@ int main(int argc, char** argv) {
         gui_dir = optarg;
         gui_mode = 1;
 
-        // letslog(gui_dir, strlen(gui_dir));
-
         break;
 
       case 'V': /* Show version number */
@@ -8242,21 +8190,7 @@ int main(int argc, char** argv) {
 
     }
 
-    letslog("Fuzz one! \n", -1);
-
-    if (python_pid == -1 && gui_mode) {
-        python_pid = fork();
-
-        if (!python_pid) {
-            char *args[] = {"python3", gui_dir, NULL};
-            execv("/usr/bin/python3", args);
-            exit(0);
-        }
-    }
-
     skipped_fuzz = fuzz_one(use_argv);
-
-    printf("skipping this fuzz - %d\n", skipped_fuzz);
 
     if (!stop_soon && sync_id && !skipped_fuzz) {
       
@@ -8280,8 +8214,6 @@ int main(int argc, char** argv) {
      If we stopped manually, this is done by the signal handler. */
   if (stop_soon == 2) {
       if (child_pid > 0) {
-        //parent
-        // letslog("closing child in main", -1);
         kill(child_pid, SIGKILL);
     }
       if (forksrv_pid > 0) kill(forksrv_pid, SIGKILL);
