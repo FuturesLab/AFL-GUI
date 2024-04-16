@@ -2784,8 +2784,6 @@ static void perform_dry_run(char** argv) {
   u32 cal_failures = 0;
   u8* skip_crashes = getenv("AFL_SKIP_CRASHES");
 
-  int i = 0;
-
   while (q) {
 
     u8* use_mem;
@@ -2807,8 +2805,6 @@ static void perform_dry_run(char** argv) {
     close(fd);
 
     res = calibrate_case(argv, q, use_mem, 0, 1);
-
-    i+=1;
 
     ck_free(use_mem);
 
@@ -6892,6 +6888,7 @@ static void handle_stop_sig(int sig) {
 
   if (child_pid > 0) {
     kill(child_pid, SIGKILL);
+    kill(python_pid, SIGKILL);
 }
   if (forksrv_pid > 0) kill(forksrv_pid, SIGKILL);
 
@@ -6913,7 +6910,7 @@ static void handle_timeout(int sig) {
   if (child_pid > 0) {
     child_timed_out = 1; 
     kill(child_pid, SIGKILL);
-
+    kill(python_pid, SIGKILL);
   } else if (child_pid == -1 && forksrv_pid > 0) {
 
     child_timed_out = 1; 
@@ -8220,6 +8217,7 @@ int main(int argc, char** argv) {
   if (stop_soon == 2) {
       if (child_pid > 0) {
         kill(child_pid, SIGKILL);
+        kill(python_pid, SIGKILL);
     }
       if (forksrv_pid > 0) kill(forksrv_pid, SIGKILL);
   }
