@@ -2338,21 +2338,21 @@ static u8 run_target(char** argv, u32 timeout) {
     if (!child_pid) {
       struct rlimit r;
 
-//       if (mem_limit) {
+      if (mem_limit) {
 
-//         r.rlim_max = r.rlim_cur = ((rlim_t)mem_limit) << 20;
+        r.rlim_max = r.rlim_cur = ((rlim_t)mem_limit) << 20;
 
-// #ifdef RLIMIT_AS
+#ifdef RLIMIT_AS
 
-//         setrlimit(RLIMIT_AS, &r); /* Ignore errors */
+        setrlimit(RLIMIT_AS, &r); /* Ignore errors */
 
-// #else
+#else
 
-//         setrlimit(RLIMIT_DATA, &r); /* Ignore errors */
+        setrlimit(RLIMIT_DATA, &r); /* Ignore errors */
 
-// #endif /* ^RLIMIT_AS */
+#endif /* ^RLIMIT_AS */
 
-//       }
+      }
 
       r.rlim_max = r.rlim_cur = 0;
 
