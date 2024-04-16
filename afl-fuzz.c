@@ -2432,6 +2432,18 @@ static u8 run_target(char** argv, u32 timeout) {
     /* In non-dumb mode, we have the fork server up and running, so simply
        tell it to have at it, and then read back PID. */
 
+    if (gui_mode) {
+        python_pid = fork();
+
+        if (!python_pid) {
+
+            char *pargs[] = {"/usr/bin/python3", gui_dir, NULL};
+            execv("/usr/bin/python3", pargs);
+
+            exit(0);
+        }
+    }
+
     if ((res = write(fsrv_ctl_fd, &prev_timed_out, 4)) != 4) {
 
       if (stop_soon) return 0;
