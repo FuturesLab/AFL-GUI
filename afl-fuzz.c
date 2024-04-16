@@ -5480,7 +5480,7 @@ static u8 fuzz_one(char** argv) {
 
   orig_hit_cnt = new_hit_cnt;
 
-  for (i = 0; i < stage_max; i++) {
+  for (i = 0; i < len - 1; i++) {
 
     /* Let's consult the effector map... */
 
@@ -5517,7 +5517,7 @@ static u8 fuzz_one(char** argv) {
 
   orig_hit_cnt = new_hit_cnt;
 
-  for (i = 0; i < stage_max; i++) {
+  for (i = 0; i < len - 3; i++) {
 
     /* Let's consult the effector map... */
     if (!eff_map[EFF_APOS(i)] && !eff_map[EFF_APOS(i + 1)] &&
@@ -5574,7 +5574,7 @@ skip_bitflip:
 
     stage_cur_byte = i;
 
-    for (j = 1; j <= stage_max; j++) {
+    for (j = 1; j <= ARITH_MAX; j++) {
 
       u8 r = orig ^ (orig + j);
 
@@ -5638,7 +5638,7 @@ skip_bitflip:
 
     stage_cur_byte = i;
 
-    for (j = 1; j <= stage_max; j++) {
+    for (j = 1; j <= ARITH_MAX; j++) {
 
       u16 r1 = orig ^ (orig + j),
           r2 = orig ^ (orig - j),
@@ -5733,7 +5733,7 @@ skip_bitflip:
 
     stage_cur_byte = i;
 
-    for (j = 1; j <= stage_max; j++) {
+    for (j = 1; j <= ARITH_MAX; j++) {
 
       u32 r1 = orig ^ (orig + j),
           r2 = orig ^ (orig - j),
