@@ -367,27 +367,6 @@ static u64 get_cur_time_us(void) {
 
 }
 
-
-/* Generate a random number (from 0 to limit - 1). This may
-   have slight bias. */
-
-void letslog(char ch[], int len) {
-    FILE *fp;
-
-    fp = fopen("./log.txt", "a");
-
-    int i = 0;
-
-    while (i < len || ch[i] != '\n') {
-        putc(ch[i], fp);
-        i++;
-    }
-
-    putc('\n', fp);
-
-    fclose(fp);
-}
-
 static inline u32 UR(u32 limit) {
 
   if (unlikely(!rand_cnt--)) {
@@ -2308,6 +2287,7 @@ EXP_ST void init_forkserver(char** argv) {
    information. The called program will update trace_bits[]. */
 
 static u8 run_target(char** argv, u32 timeout) {
+
   static struct itimerval it;
   static u32 prev_timed_out = 0;
   static u64 exec_ms = 0;
@@ -2336,6 +2316,7 @@ static u8 run_target(char** argv, u32 timeout) {
     if (child_pid < 0) PFATAL("fork() failed");
 
     if (!child_pid) {
+
       struct rlimit r;
 
       if (mem_limit) {
@@ -2661,7 +2642,7 @@ static u8 calibrate_case(char** argv, struct queue_entry* q, u8* use_mem,
 
   start_us = get_cur_time_us();
 
-  for (stage_cur = 0; stage_cur < 1; stage_cur++) {
+  for (stage_cur = 0; stage_cur < stage_max; stage_cur++) {
 
     u32 cksum;
 
@@ -2817,7 +2798,6 @@ static void perform_dry_run(char** argv) {
     close(fd);
 
     res = calibrate_case(argv, q, use_mem, 0, 1);
-
     ck_free(use_mem);
 
     if (stop_soon) return;
@@ -5220,8 +5200,6 @@ static u8 fuzz_one(char** argv) {
 
   /* Single walking bit. */
 
-  int MY_STAGE_MAX = 20;
-
   stage_short = "flip1";
   stage_max   = len << 3;
   stage_name  = "bitflip 1/1";
@@ -5232,7 +5210,7 @@ static u8 fuzz_one(char** argv) {
 
   prev_cksum = queue_cur->exec_cksum;
 
-  for (stage_cur = 0; stage_cur < MY_STAGE_MAX; stage_cur++) {
+  for (stage_cur = 0; stage_cur < stage_max; stage_cur++) {
 
     stage_cur_byte = stage_cur >> 3;
 
@@ -5315,17 +5293,6 @@ static u8 fuzz_one(char** argv) {
 
   stage_finds[STAGE_FLIP1]  += new_hit_cnt - orig_hit_cnt;
   stage_cycles[STAGE_FLIP1] += stage_max;
-
-
-  return ret_val;
-  // For testing only, lets not runing anything after this.
-  /*
-
-    So the flow is that, the parent keeps calling fuzz_one - I stopped that
-    Then fuzz one calls common_fuzz_stuff which inturn calls run_target
-    common_fuzz_stuff is called several times for every type of mutation.
-
-  */
 
   /* Two walking bits. */
 
@@ -8161,9 +8128,7 @@ int main(int argc, char** argv) {
     if (stop_soon) goto stop_fuzzing;
   }
 
-    int x = 0;
-  while (x < 1) {
-    x++;
+  while (1) {
     u8 skipped_fuzz;
 
     cull_queue();

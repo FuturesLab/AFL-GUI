@@ -30,7 +30,7 @@
 
 
 VERSION="2.10.0"
-QEMU_URL="http://download.qemu.org/qemu-${VERSION}.tar.xz"
+QEMU_URL="http://download.qemu-project.org/qemu-${VERSION}.tar.xz"
 QEMU_SHA384="68216c935487bc8c0596ac309e1e3ee75c2c4ce898aab796faa321db5740609ced365fedda025678d072d09ac8928105"
 
 echo "================================================="
@@ -62,7 +62,7 @@ if [ ! -f "../afl-showmap" ]; then
 fi
 
 
-for i in libtool wget automake autoconf sha384sum bison iconv; do
+for i in libtool wget python automake autoconf sha384sum bison iconv; do
 
   T=`which "$i" 2>/dev/null`
 
@@ -145,9 +145,8 @@ echo "[+] Patching done."
 # --enable-pie seems to give a couple of exec's a second performance
 # improvement, much to my surprise. Not sure how universal this is..
 
-CFLAGS="-O3 -ggdb"
-./configure --disable-system \
-  --enable-linux-user --disable-gtk --disable-sdl --disable-vnc --python=/usr/bin/python2 \
+CFLAGS="-O3 -ggdb" ./configure --disable-system \
+  --enable-linux-user --disable-gtk --disable-sdl --disable-vnc \
   --target-list="${CPU_TARGET}-linux-user" --enable-pie --enable-kvm || exit 1
 
 echo "[+] Configuration complete."
