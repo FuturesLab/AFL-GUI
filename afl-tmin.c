@@ -52,7 +52,8 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 
-static s32 child_pid;                 /* PID of the tested program         */
+static s32 child_pid,                 /* PID of the tested program         */
+           python_pid = -1;                 
 
 static u8 *trace_bits,                /* SHM with instrumentation bitmap   */
           *mask_bitmap;               /* Mask for trace bits (-B)          */
@@ -61,7 +62,8 @@ static u8 *in_file,                   /* Minimizer input test case         */
           *out_file,                  /* Minimizer output file             */
           *prog_in,                   /* Targeted program input file       */
           *target_path,               /* Path to target binary             */
-          *doc_path;                  /* Path to docs                      */
+          *doc_path,                  /* Path to docs                      */
+          *gui_dir;                  
 
 static u8* in_data;                   /* Input data for trimming           */
 
@@ -82,7 +84,8 @@ static u8  crash_mode,                /* Crash-centric mode?               */
            exit_crash,                /* Treat non-zero exit as crash?     */
            edges_only,                /* Ignore hit counts?                */
            exact_mode,                /* Require path match for crashes?   */
-           use_stdin = 1;             /* Use stdin for program input?      */
+           use_stdin = 1,             /* Use stdin for program input?      */
+           gui_mode = 0;             
 
 static volatile u8
            stop_soon,                 /* Ctrl-C pressed?                   */
@@ -250,7 +253,11 @@ static s32 write_to_file(u8* path, u8* mem, u32 len) {
 static void handle_timeout(int sig) {
 
   child_timed_out = 1;
-  if (child_pid > 0) kill(child_pid, SIGKILL);
+  if (child_pid > 0) 
+  {
+    kill(child_pid, SIGKILL);
+    kill(python_pid, SIGKILL);
+  }
 
 }
 
@@ -312,11 +319,32 @@ static u8 run_target(char** argv, u8* mem, u32 len, u8 first_run) {
     r.rlim_max = r.rlim_cur = 0;
     setrlimit(RLIMIT_CORE, &r); /* Ignore errors */
 
-    execv(target_path, argv);
+    if (!gui_mode) {
+
+        execv(target_path, argv);
+
+    } else {
+
+        char *args[] = {target_path, NULL};
+        execv(target_path, args);
+
+    }
 
     *(u32*)trace_bits = EXEC_FAIL_SIG;
     exit(0);
 
+  }
+
+  if (gui_mode) {
+    python_pid = fork();
+
+    if (!python_pid) {
+
+      char *pargs[] = {"/usr/bin/python3", gui_dir, NULL};
+      execv("/usr/bin/python3", pargs);
+
+      exit(0);
+    }
   }
 
   close(prog_in_fd);
@@ -666,7 +694,10 @@ static void handle_stop_sig(int sig) {
 
   stop_soon = 1;
 
-  if (child_pid > 0) kill(child_pid, SIGKILL);
+  if (child_pid > 0) {
+    kill(child_pid, SIGKILL);
+    kill(python_pid, SIGKILL);
+  }
 
 }
 
@@ -990,7 +1021,7 @@ int main(int argc, char** argv) {
 
   SAYF(cCYA "afl-tmin " cBRI VERSION cRST " by <lcamtuf@google.com>\n");
 
-  while ((opt = getopt(argc,argv,"+i:o:f:m:t:B:xeQV")) > 0)
+  while ((opt = getopt(argc,argv,"+i:o:g:f:m:t:B:xeQV")) > 0)
 
     switch (opt) {
 
@@ -1100,6 +1131,13 @@ int main(int argc, char** argv) {
         if (mask_bitmap) FATAL("Multiple -B options not supported");
         mask_bitmap = ck_alloc(MAP_SIZE);
         read_bitmap(optarg);
+        break;
+
+      case 'g':
+
+        gui_dir = optarg;
+        gui_mode = 1;
+
         break;
 
       case 'V': /* Show version number */
